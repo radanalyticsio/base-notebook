@@ -1,6 +1,6 @@
 # (ideally) minimal pyspark/jupyter notebook
 
-FROM centos:centos7
+FROM radanalyticsio/openshift-spark
 
 USER root
 
@@ -19,8 +19,6 @@ ENV NB_PYTHON_VER=2.7
 
 # Python binary and source dependencies
 RUN yum install -y curl wget java-headless bzip2 gnupg2 sqlite3 \
-    && yum install -y epel-release \
-    && yum install -y jq nss_wrapper \
     && yum clean all -y \
     && cd /tmp \
     && wget -q https://repo.continuum.io/miniconda/Miniconda3-4.2.12-Linux-x86_64.sh \
@@ -57,35 +55,14 @@ RUN yum install -y curl wget java-headless bzip2 gnupg2 sqlite3 \
 
 ENV PATH /opt/conda/bin:$PATH
 
-ENV APACHE_SPARK_VERSION 2.1.0
-RUN cd /tmp && \
-        wget -q http://d3kbcqa49mib13.cloudfront.net/spark-${APACHE_SPARK_VERSION}-bin-hadoop2.7.tgz && \
-        echo "50e73f255f9bde50789ad5bd657c7a71 *spark-${APACHE_SPARK_VERSION}-bin-hadoop2.7.tgz" | md5sum -c - && \
-        tar xzf spark-${APACHE_SPARK_VERSION}-bin-hadoop2.7.tgz -C /usr/local && \
-        rm spark-${APACHE_SPARK_VERSION}-bin-hadoop2.7.tgz && \
-	cd /usr/local && ln -s spark-${APACHE_SPARK_VERSION}-bin-hadoop2.7 spark
-
-ENV SPARK_HOME /usr/local/spark
-ENV PYTHONPATH $SPARK_HOME/python:$SPARK_HOME/python/lib/py4j-0.10.4-src.zip
+ENV SPARK_HOME /opt/spark
 ENV SPARK_OPTS --driver-java-options=-Xms1024M --driver-java-options=-Xmx4096M --driver-java-options=-Dlog4j.logLevel=info
 
 # Add a notebook profile.
 
 RUN mkdir /notebooks && chown $NB_UID:root /notebooks && chmod 1777 /notebooks
 
-# tini setup
-
-ENV TINI_VERSION v0.9.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini.asc /tini.asc
-RUN gpg --keyserver ha.pool.sks-keyservers.net --recv-keys 0527A9B7 && gpg --verify /tini.asc
-RUN chmod +x /tini
-
-ENTRYPOINT ["/tini", "--"]
-
 EXPOSE 8888
-
-ADD start.sh /start.sh
 
 RUN mkdir -p -m 700 /home/$NB_USER/.jupyter/ && \
     echo "c.NotebookApp.ip = '*'" >> /home/$NB_USER/.jupyter/jupyter_notebook_config.py && \
@@ -98,7 +75,18 @@ LABEL io.k8s.description="PySpark Jupyter Notebook." \
       io.k8s.display-name="PySpark Jupyter Notebook." \
       io.openshift.expose-services="8888:http"
 
+ENV TINI_VERSION v0.9.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini.asc /tini.asc
+RUN gpg --keyserver ha.pool.sks-keyservers.net --recv-keys 0527A9B7 && gpg --verify /tini.asc
+ADD start.sh /start.sh
+
+RUN chmod +x /tini /start.sh
+
 ENV HOME /home/$NB_USER
 USER $NB_UID
+WORKDIR /notebooks
 
-CMD ["/start.sh"]
+ENTRYPOINT ["/tini", "--"]
+
+CMD ["/entrypoint", "/start.sh"]
