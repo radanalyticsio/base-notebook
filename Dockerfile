@@ -56,7 +56,6 @@ RUN yum install -y curl wget java-headless bzip2 gnupg2 sqlite3 \
 ENV PATH /opt/conda/bin:$PATH
 
 ENV SPARK_HOME /opt/spark
-ENV SPARK_OPTS --driver-java-options=-Xms1024M --driver-java-options=-Xmx4096M --driver-java-options=-Dlog4j.logLevel=info
 
 # Add a notebook profile.
 
