@@ -1,6 +1,10 @@
+[![Build status](https://travis-ci.org/radanalyticsio/base-notebook.svg?branch=master)](https://travis-ci.org/radanalyticsio/base-notebook)
+[![Docker build](https://img.shields.io/docker/automated/radanalyticsio/base-notebook.svg)](https://hub.docker.com/r/radanalyticsio/base-notebook)
+[![Layers info](https://images.microbadger.com/badges/image/radanalyticsio/base-notebook.svg)](https://microbadger.com/images/radanalyticsio/base-notebook)
+
 # base-notebook
 
-This is a container image intended to make it easy to run Jupyter notebooks with Apache Spark on OpenShift.  You can use it as-is (by adding it to a project), or you can use it as the basis for another image.  In the latter case, you'll probably want to add some notebooks, data, and/or additional packages to the derived image.
+This is a container image intended to make it easy to run Jupyter notebooks with Apache Spark on OpenShift. You can use it as-is (by adding it to a project), or you can use it as the basis for another image. In the latter case, you'll probably want to add some notebooks, data, and/or additional packages to the derived image.
 
 ## Usage
 
