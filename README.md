@@ -4,7 +4,7 @@
 
 # base-notebook
 
-This is a container image intended to make it easy to run Jupyter notebooks with Apache Spark on OpenShift.  You can use it as-is (by adding it to a project), or you can use it as the basis for another image.  In the latter case, you'll probably want to add some notebooks, data, and/or additional packages to the derived image.
+This is a container image intended to make it easy to run Jupyter notebooks with Apache Spark on OpenShift. You can use it as-is (by adding it to a project), or you can use it as the basis for another image. In the latter case, you'll probably want to add some notebooks, data, and/or additional packages to the derived image.
 
 ## Usage
 
