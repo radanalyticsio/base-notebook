@@ -5,7 +5,6 @@ FROM radanalyticsio/openshift-spark:2.2-latest
 USER root
 
 ## taken/adapted from jupyter dockerfiles
-
 # Not essential, but wise to set the lang
 # Note: Users with other languages should set this in their derivative image
 ENV LANGUAGE en_US.UTF-8
@@ -16,29 +15,81 @@ ENV CONDA_DIR /opt/conda
 ENV NB_USER=nbuser
 ENV NB_UID=1011
 ENV NB_PYTHON_VER=2.7
+ENV PATH $CONDA_DIR/bin:$PATH
+ENV SPARK_HOME /opt/spark
+# TODO remove tini after docker 1.13.1
+ENV TINI_VERSION v0.9.0
+LABEL io.k8s.description="PySpark Jupyter Notebook." \
+      io.k8s.display-name="PySpark Jupyter Notebook." \
+      io.openshift.expose-services="8888:http"
 
-# Python binary and source dependencies
-RUN yum install -y curl wget java-headless bzip2 gnupg2 sqlite3 \
-    && yum clean all -y \
+
+RUN echo 'PS1="\u@\h:\w\\$ \[$(tput sgr0)\]"' >> /root/.bashrc \
+    && chgrp root /etc/passwd \
+    && chgrp -R root /opt \
+    && chmod -R ug+rwx /opt \
+    && useradd -m -s /bin/bash -N -u $NB_UID $NB_USER \
+    && usermod -g root $NB_USER \
+    && yum install -y curl wget java-headless bzip2 gnupg2 sqlite3 gcc gcc-c++ glibc-devel \
+    && wget -q https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -P /tmp \
+    && wget -q https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini.asc -P /tmp \
+    && cd /tmp  \
+    && gpg --keyserver ha.pool.sks-keyservers.net --recv-keys 0527A9B7 && gpg --verify /tmp/tini.asc \
+    && mv /tmp/tini /usr/local/bin/tini \
+    && chmod +x /usr/local/bin/tini 
+    
+
+
+USER $NB_USER
+
+
+# Python binary and source dependencies and Development tools
+
+# Make the default PWD somewhere that the user can write. This is
+# useful when connecting with 'oc run' and starting a 'spark-shell',
+# which will likely try to create files and directories in PWD and
+# error out if it cannot. 
+# 
+ADD fix-permissions.sh /usr/local/bin/fix-permissions.sh
+ENV HOME /home/$NB_USER
+RUN mkdir $HOME/.jupyter \
     && cd /tmp \
     && wget -q https://repo.continuum.io/miniconda/Miniconda3-4.2.12-Linux-x86_64.sh \
     && echo d0c7c71cc5659e54ab51f2005a8d96f3 Miniconda3-4.2.12-Linux-x86_64.sh | md5sum -c - \
     && bash Miniconda3-4.2.12-Linux-x86_64.sh -b -p $CONDA_DIR \
     && rm Miniconda3-4.2.12-Linux-x86_64.sh \
-    && export PATH=/opt/conda/bin:$PATH \
-    && yum install -y gcc gcc-c++ glibc-devel \
-    && /opt/conda/bin/conda install --quiet --yes python=$NB_PYTHON_VER 'nomkl' \
-			    'ipywidgets=5.2*' \
-			    'matplotlib=1.5*' \
-			    'scipy=0.17*' \
-			    'seaborn=0.7*' \
-			    'cloudpickle=0.1*' \
-			    statsmodels \
-			    pandas \
-			    'dill=0.2*' \
-			    notebook \
-			    jupyter \
-    && pip install widgetsnbextension \
+    && export PATH=$CONDA_DIR/bin:$PATH \
+    && $CONDA_DIR/bin/conda install --quiet --yes python=$NB_PYTHON_VER 'nomkl' \
+                'ipywidgets=5.2*' \
+                'matplotlib=1.5*' \
+                'scipy=0.17*' \
+                'seaborn=0.7*' \
+                'cloudpickle=0.1*' \
+                statsmodels \
+                pandas \
+                'dill=0.2*' \
+                numpy \
+                jupyter \
+                notebook \
+                scikit-learn \
+    && $CONDA_DIR/bin/conda remove --quiet --yes --force qt pyqt \
+    && $CONDA_DIR/bin/conda clean -tipsy \
+    && fix-permissions.sh $CONDA_DIR \
+    && fix-permissions.sh $HOME 
+
+
+USER root
+
+# IPython
+EXPOSE 8888
+WORKDIR $HOME
+
+#&& chown $NB_UID:root /notebooks
+RUN mkdir /notebooks  \
+    && mkdir -p $HOME/.jupyter \
+    && echo "c.NotebookApp.ip = '*'" >> $HOME/.jupyter/jupyter_notebook_config.py \
+    && echo "c.NotebookApp.open_browser = False" >> $HOME/.jupyter/jupyter_notebook_config.py \
+    && echo "c.NotebookApp.notebook_dir = '/notebooks'" >> $HOME/.jupyter/jupyter_notebook_config.py \
     && yum erase -y gcc gcc-c++ glibc-devel \
     && yum clean all -y \
     && rm -rf /root/.npm \
@@ -46,46 +97,15 @@ RUN yum install -y curl wget java-headless bzip2 gnupg2 sqlite3 \
     && rm -rf /root/.config \
     && rm -rf /root/.local \
     && rm -rf /root/tmp \
-    && useradd -m -s /bin/bash -N -u $NB_UID $NB_USER \
-    && usermod -g root $NB_USER \
-    && chown -R $NB_USER $CONDA_DIR \
-    && conda remove --quiet --yes --force qt pyqt \
-    && conda remove --quiet --yes --force --feature mkl ; conda clean -tipsy
+    && fix-permissions.sh /opt \
+    && fix-permissions.sh $CONDA_DIR \
+    && fix-permissions.sh /notebooks \
+    && fix-permissions.sh $HOME
 
 
-ENV PATH /opt/conda/bin:$PATH
-
-ENV SPARK_HOME /opt/spark
-
-# Add a notebook profile.
-
-RUN mkdir /notebooks && chown $NB_UID:root /notebooks && chmod 1777 /notebooks
-
-EXPOSE 8888
-
-RUN mkdir -p -m 700 /home/$NB_USER/.jupyter/ && \
-    echo "c.NotebookApp.ip = '*'" >> /home/$NB_USER/.jupyter/jupyter_notebook_config.py && \
-    echo "c.NotebookApp.open_browser = False" >> /home/$NB_USER/.jupyter/jupyter_notebook_config.py && \
-    echo "c.NotebookApp.notebook_dir = '/notebooks'" >> /home/$NB_USER/.jupyter/jupyter_notebook_config.py && \
-    chown -R $NB_UID:root /home/$NB_USER && \
-    chmod g+rwX,o+rX -R /home/$NB_USER
-
-LABEL io.k8s.description="PySpark Jupyter Notebook." \
-      io.k8s.display-name="PySpark Jupyter Notebook." \
-      io.openshift.expose-services="8888:http"
-
-ENV TINI_VERSION v0.9.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini.asc /tini.asc
-RUN gpg --keyserver ha.pool.sks-keyservers.net --recv-keys 0527A9B7 && gpg --verify /tini.asc
-ADD start.sh /start.sh
-
-RUN chmod +x /tini /start.sh
-
-ENV HOME /home/$NB_USER
-USER $NB_UID
+ADD start.sh /usr/local/bin/start.sh
 WORKDIR /notebooks
+ENTRYPOINT ["tini", "--"]
+CMD ["/entrypoint", "start.sh"]
 
-ENTRYPOINT ["/tini", "--"]
-
-CMD ["/entrypoint", "/start.sh"]
+USER $NB_USER
