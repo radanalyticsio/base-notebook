@@ -12,9 +12,9 @@ This is a container image intended to make it easy to run Jupyter notebooks with
 
 For your convenience, binary image builds are available from Docker Hub.
 
-* Add the image `radanalyticsio/base-notebook` to an OpenShift project
-* Set `JUPYTER_NOTEBOOK_PASSWORD` in the pod environment to something you can remember (this step is optional but highly recommended; if you don't do this, you'll need to trawl the logs for an access token for your new notebook)
-* Create a route to the pod
+* Add the image `radanalyticsio/base-notebook` to an OpenShift project.
+* Set `JUPYTER_NOTEBOOK_PASSWORD` in the pod environment to something you can remember (this step is optional but highly recommended; if you don't do this, you'll need to trawl the logs for an access token for your new notebook).
+* Create a route to the pod.
 
 ### As a base image
 
