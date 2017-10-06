@@ -18,7 +18,7 @@ ENV NB_PYTHON_VER=2.7
 ENV PATH $CONDA_DIR/bin:$PATH
 ENV SPARK_HOME /opt/spark
 # TODO remove tini after docker 1.13.1
-ENV TINI_VERSION v0.9.0
+
 LABEL io.k8s.description="PySpark Jupyter Notebook." \
       io.k8s.display-name="PySpark Jupyter Notebook." \
       io.openshift.expose-services="8888:http"
@@ -30,13 +30,7 @@ RUN echo 'PS1="\u@\h:\w\\$ \[$(tput sgr0)\]"' >> /root/.bashrc \
     && chmod -R ug+rwx /opt \
     && useradd -m -s /bin/bash -N -u $NB_UID $NB_USER \
     && usermod -g root $NB_USER \
-    && yum install -y curl wget java-headless bzip2 gnupg2 sqlite3 gcc gcc-c++ glibc-devel \
-    && wget -q https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini -P /tmp \
-    && wget -q https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini.asc -P /tmp \
-    && cd /tmp  \
-    && gpg --keyserver ha.pool.sks-keyservers.net --recv-keys 0527A9B7 && gpg --verify /tmp/tini.asc \
-    && mv /tmp/tini /usr/local/bin/tini \
-    && chmod +x /usr/local/bin/tini 
+    && yum install -y curl wget java-headless bzip2 gnupg2 sqlite3 gcc gcc-c++ glibc-devel 
     
 
 
@@ -50,7 +44,7 @@ USER $NB_USER
 # which will likely try to create files and directories in PWD and
 # error out if it cannot. 
 # 
-ADD fix-permissions.sh /usr/local/bin/fix-permissions.sh
+
 ENV HOME /home/$NB_USER
 RUN mkdir $HOME/.jupyter \
     && cd /tmp \
