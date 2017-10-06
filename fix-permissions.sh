@@ -23,3 +23,4 @@ find -L "$1" ${CHECK_OWNER} -type d \! -perm /g+x -exec chmod g+x {} +
 
 # Always end successfully
 exit 0
+
