@@ -54,18 +54,11 @@ RUN mkdir $HOME/.jupyter \
     && rm Miniconda3-4.2.12-Linux-x86_64.sh \
     && export PATH=$CONDA_DIR/bin:$PATH \
     && $CONDA_DIR/bin/conda install --quiet --yes python=$NB_PYTHON_VER 'nomkl' \
-                'ipywidgets=5.2*' \
-                'matplotlib=1.5*' \
-                'scipy=0.17*' \
-                'seaborn=0.7*' \
-                'cloudpickle=0.1*' \
-                statsmodels \
-                pandas \
-                'dill=0.2*' \
                 numpy \
+                scipy \
+                pandas \
                 jupyter \
                 notebook \
-                scikit-learn \
     && $CONDA_DIR/bin/conda remove --quiet --yes --force qt pyqt \
     && $CONDA_DIR/bin/conda clean -tipsy \
     && fix-permissions.sh $CONDA_DIR \
