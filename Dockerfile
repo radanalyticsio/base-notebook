@@ -55,6 +55,7 @@ RUN mkdir $HOME/.jupyter \
     && export PATH=$CONDA_DIR/bin:$PATH \
     && $CONDA_DIR/bin/conda install --quiet --yes python=$NB_PYTHON_VER 'nomkl' \
                 numpy \
+		'zlib=1.2.11*' \
                 scipy \
                 pandas \
                 jupyter \
