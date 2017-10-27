@@ -30,7 +30,7 @@ RUN echo 'PS1="\u@\h:\w\\$ \[$(tput sgr0)\]"' >> /root/.bashrc \
     && chmod -R ug+rwx /opt \
     && useradd -m -s /bin/bash -N -u $NB_UID $NB_USER \
     && usermod -g root $NB_USER \
-    && yum install -y curl wget java-headless bzip2 gnupg2 sqlite3 gcc gcc-c++ glibc-devel git
+    && yum install -y curl wget java-headless bzip2 gnupg2 sqlite3 gcc gcc-c++ glibc-devel git mesa-libGL mesa-libGL-devel
     
 
 
