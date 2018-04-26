@@ -21,6 +21,10 @@ For your convenience, binary image builds are available from Docker Hub.
 * As `nbuser` (uid 1011), add notebooks to `/notebooks` and data to `/data`.
 * This process should be easier in the future; stay tuned!
 
+## Notes
+
+Make sure that this notebook image is running the same version of Spark as the external cluster you want to connect it to.
+
 ## Credits
 
 This image was initially based on [Graham Dumpleton's images](https://github.com/getwarped/jupyter-stacks), which have some additional functionality (notably s2i support) that we'd like to incorporate in the future.
